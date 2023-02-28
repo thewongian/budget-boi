@@ -1,16 +1,18 @@
-use std::thread;
-use std::time::Duration;
+mod server;
+use server::{mongo, filters};
+use warp::Filter;
 
-fn main() {
-    thread::spawn(|| {
-        for i in 1..10 {
-            println!("hi number {} from the spawned thread!", i);
-            thread::sleep(Duration::from_millis(1));
-        }
-    });
-
-    for i in 1..5 {
-        println!("hi number {} from the main thread!", i);
-        thread::sleep(Duration::from_millis(1));
+#[tokio::main]
+async fn main() {
+    pretty_env_logger::init();
+    let mut db = mongo::Db::new();
+    let err = db.init().await;
+    if err.is_err() {
+        panic!("Database could not be initialized")
     }
+    let api = filters::budget(db);
+    
+    let routes = api.with(warp::log("budget"));
+    //nice
+    warp::serve(routes).run(([127, 0, 0, 1], 6969)).await;
 }
