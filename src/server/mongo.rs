@@ -1,17 +1,19 @@
 use dotenv::dotenv;
 use mongodb::{
     options::{ClientOptions, ResolverConfig},
-    Client,
+    Client, bson::oid::ObjectId,
 };
 use serde::{Deserialize, Serialize};
 use std::{env, error::Error};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct User {
-    pub id: u64,
-    pub username: String,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub password_hashed: String,
     pub email: String,
+    pub name: String,
+    
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

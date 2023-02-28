@@ -13,6 +13,7 @@ pub fn budget(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp
 pub fn expenses_list(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("expenses" / u64)
         .and(warp::get())
+        .and(with_db(db))
         .and_then(handlers::list_expenses)
 }
 
@@ -21,6 +22,7 @@ pub fn expense_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Erro
     warp::path!("create_expense")
         .and(warp::post())
         .and(json_body_expense())
+        .and(with_db(db))
         .and_then(handlers::add_expense)
 }
 
@@ -28,6 +30,7 @@ pub fn income_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error
     warp::path!("create_income")
         .and(warp::post())
         .and(json_body_expense())
+        .and(with_db(db))
         .and_then(handlers::add_income)
 }
 
@@ -35,6 +38,7 @@ pub fn user_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error =
     warp::path!("create_user")
         .and(warp::post())
         .and(json_body_user())
+        .and(with_db(db))
         .and_then(handlers::add_user)
 }
 
@@ -42,6 +46,7 @@ pub fn expense_delete(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Erro
     
     warp::path!("expenses" / u64 / u64)
         .and(warp::delete())
+        .and(with_db(db))
         .and_then(handlers::delete_expense)
 }
 

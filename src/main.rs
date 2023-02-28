@@ -1,9 +1,16 @@
 mod server;
+use std::env;
+
 use server::{mongo, filters};
 use warp::Filter;
 
 #[tokio::main]
 async fn main() {
+    if env::var_os("RUST_LOG").is_none() {
+        // Set `RUST_LOG=todos=debug` to see debug logs,
+        // this only shows access logs.
+        env::set_var("RUST_LOG", "todos=info");
+    }
     pretty_env_logger::init();
     let mut db = mongo::Db::new();
     let err = db.init().await;
