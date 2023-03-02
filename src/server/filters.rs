@@ -8,10 +8,11 @@ pub fn budget(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp
         .or(income_create(db.clone()))
         .or(user_create(db.clone()))
         .or(expense_delete(db.clone()))
+        .or(login(db.clone()))
 }
 
 pub fn expenses_list(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    warp::path!("expenses" / u64)
+    warp::path!("expenses" / String)
         .and(warp::get())
         .and(with_db(db))
         .and_then(handlers::list_expenses)
@@ -19,7 +20,7 @@ pub fn expenses_list(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error
 
 
 pub fn expense_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    warp::path!("create_expense")
+    warp::path!("create_expense" / String)
         .and(warp::post())
         .and(json_body_expense())
         .and(with_db(db))
@@ -27,7 +28,7 @@ pub fn expense_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Erro
 }
 
 pub fn income_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    warp::path!("create_income")
+    warp::path!("create_income" / String)
         .and(warp::post())
         .and(json_body_expense())
         .and(with_db(db))
@@ -44,12 +45,19 @@ pub fn user_create(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error =
 
 pub fn expense_delete(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     
-    warp::path!("expenses" / u64 / u64)
+    warp::path!("expenses" / String / u64)
         .and(warp::delete())
         .and(with_db(db))
         .and_then(handlers::delete_expense)
 }
 
+pub fn login(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("login")
+    .and(warp::post())
+    .and(json_body_user())
+    .and(with_db(db))
+    .and_then(handlers::user_login)
+}
 
 fn json_body_user() -> impl Filter<Extract = (User,), Error = warp::Rejection> + Clone {
     // When accepting a body, we want a JSON body

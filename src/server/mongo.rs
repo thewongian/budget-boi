@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use mongodb::{
     options::{ClientOptions, ResolverConfig},
     Client, bson::oid::ObjectId,
@@ -18,9 +17,11 @@ pub struct User {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Expense {
-    pub id: u64,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub cost: f64,
     pub name: String,
+    pub owner: String,
 }
 
 #[derive(Debug, Clone)]
@@ -36,7 +37,7 @@ impl Db {
         }
     }
     pub async fn init(&mut self) -> Result<(), Box<dyn Error>> {
-        dotenv().ok();
+        
         let client_uri =
             env::var("MONGODB_URI").expect("You must set the MONGODB_URI environment var!");
         let options =

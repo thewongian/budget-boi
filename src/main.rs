@@ -1,11 +1,12 @@
 mod server;
 use std::env;
-
+use dotenv::dotenv;
 use server::{mongo, filters};
 use warp::Filter;
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
     if env::var_os("RUST_LOG").is_none() {
         // Set `RUST_LOG=todos=debug` to see debug logs,
         // this only shows access logs.
