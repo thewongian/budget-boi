@@ -16,7 +16,8 @@ async fn main() {
     let mut db = mongo::Db::new();
     let err = db.init().await;
     if err.is_err() {
-        panic!("Database could not be initialized")
+        eprintln!("{}", err.unwrap_err());
+        panic!("Database could not be initialized");
     }
     let api = filters::budget(db);
     

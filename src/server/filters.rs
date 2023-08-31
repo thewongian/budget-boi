@@ -1,5 +1,5 @@
 use super::handlers;
-use super::mongo::{User, Expense, Db};
+use super::mongo::{User, Expense, Db, LoginInfo};
 use warp::Filter;
 
 pub fn budget(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
@@ -54,7 +54,7 @@ pub fn expense_delete(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Erro
 pub fn login(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("login")
     .and(warp::post())
-    .and(json_body_user())
+    .and(json_body_login())
     .and(with_db(db))
     .and_then(handlers::user_login)
 }
@@ -62,6 +62,10 @@ pub fn login(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp:
 fn json_body_user() -> impl Filter<Extract = (User,), Error = warp::Rejection> + Clone {
     // When accepting a body, we want a JSON body
     // (and to reject huge payloads)...
+    warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+}
+
+fn json_body_login() -> impl Filter<Extract = (LoginInfo,), Error = warp::Rejection> + Clone {
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 

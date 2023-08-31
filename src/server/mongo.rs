@@ -16,6 +16,12 @@ pub struct User {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct LoginInfo {
+    pub password_hashed: String,
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Expense {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,

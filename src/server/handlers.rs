@@ -1,10 +1,11 @@
-use super::mongo::{Expense, User, Db};
+use super::mongo::{Expense, User, Db, LoginInfo};
+use super::authenticate::{*};
 use std::convert::Infallible;
-use mongodb::bson::{Document, self, doc, oid::ObjectId};
+use mongodb::bson::{Document, self, doc};
 use warp::http::StatusCode;
 
 pub async fn list_expenses(user_id: String, db: Db) -> Result<impl warp::Reply, Infallible> {
-    if is_authenthicated(user_id) {
+    if is_authenthicated(user_id, db).await {
         Ok(StatusCode::OK)
     }
     else {
@@ -13,7 +14,7 @@ pub async fn list_expenses(user_id: String, db: Db) -> Result<impl warp::Reply, 
 }
 
 pub async fn add_expense(user_id: String, expense: Expense, db: Db) -> Result<impl warp::Reply, Infallible> {
-    if is_authenthicated(user_id) {
+    if is_authenthicated(user_id, db).await {
         Ok(StatusCode::CREATED)
     }
     else {
@@ -22,7 +23,7 @@ pub async fn add_expense(user_id: String, expense: Expense, db: Db) -> Result<im
 }
 
 pub async fn add_income(user_id: String, income: Expense, db: Db) -> Result<impl warp::Reply, Infallible> {
-    if is_authenthicated(user_id) {
+    if is_authenthicated(user_id, db).await {
         Ok(StatusCode::CREATED)
     }
     else {
@@ -52,22 +53,21 @@ pub async fn add_user(user: User, db: Db) -> Result<impl warp::Reply, Infallible
 }
 
 pub async fn delete_expense(user_id: String, expense_id: u64, db: Db) -> Result<impl warp::Reply, Infallible> {
-    if is_authenthicated(user_id) {
+    if is_authenthicated(user_id, db).await {
         Ok(StatusCode::NO_CONTENT)
     }
     else {
-        Ok(StatusCode::FORBIDDEN)
+        Ok(StatusCode::UNAUTHORIZED)
     }
 }
 
-pub async fn user_login(user: User, db: Db) -> Result<impl warp::Reply, Infallible> {
+pub async fn user_login(login_info: LoginInfo, db: Db) -> Result<impl warp::Reply, Infallible> {
     //TODO - implement login functionality along with function below
-    Ok(StatusCode::OK)
-}
-
-fn is_authenthicated(user_id: String) -> bool {
-    let object_id = ObjectId::parse_str(user_id);
-    //TODO - implement this
-    // todo!();
-    true
+    if verify_user(login_info, db).await {
+        Ok(StatusCode::OK)
+    }
+    else {
+        Ok(StatusCode::UNAUTHORIZED)
+    }
+    
 }
