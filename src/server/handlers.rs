@@ -10,7 +10,6 @@ use warp::reject::{self, reject, Rejection};
 use warp::reply::{self, Reply};
 
 pub async fn list_expenses(user_id: String, db: Db) -> Result<impl warp::Reply, Infallible> {
-
     Ok(StatusCode::OK)
 }
 
@@ -29,7 +28,7 @@ pub async fn add_expense(
         .collection::<Document>("expenses");
     let insert_result = expenses.insert_one(document.to_owned(), None).await;
     if insert_result.is_err() {
-        return Ok(StatusCode::INTERNAL_SERVER_ERROR)
+        return Ok(StatusCode::INTERNAL_SERVER_ERROR);
     }
     Ok(StatusCode::CREATED)
 }
