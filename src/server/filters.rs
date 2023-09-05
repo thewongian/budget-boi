@@ -66,7 +66,7 @@ pub fn user_create(
 pub fn expense_delete(
     db: Db,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    warp::path!("expenses" / u64)
+    warp::path!("expenses" / usize)
         .and(warp::delete())
         .and(with_auth())
         .and(with_db(db))

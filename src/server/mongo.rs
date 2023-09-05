@@ -19,6 +19,8 @@ pub struct User {
 pub struct Expense {
     pub cost: f64,
     pub name: String,
+    pub id: usize,
+    pub deleted: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -27,6 +29,7 @@ pub struct ExpenseList {
     pub id: Option<ObjectId>,
     pub list: Vec<Expense>,
     pub owner: String,
+    pub id_count: usize,
 }
 impl ExpenseList {
     pub fn new(expense: Expense, owner: String) -> Self {
@@ -35,6 +38,7 @@ impl ExpenseList {
             id: None,
             list: expenses,
             owner: owner,
+            id_count: 0,
         }
     }
 }
