@@ -19,7 +19,7 @@ async fn main() {
         eprintln!("{}", err.unwrap_err());
         panic!("Database could not be initialized");
     }
-    let api = filters::budget(db);
+    let api = filters::budget_api(db);
     
     let routes = api.with(warp::log("budget"));
     //nice

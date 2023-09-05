@@ -1,11 +1,12 @@
 use super::auth::*;
+use super::error;
 use super::handlers;
 use super::mongo::{Db, Expense, User};
 use warp::filters::header::headers_cloned;
 use warp::reject::Rejection;
 use warp::Filter;
 
-pub fn budget(
+pub fn budget_api(
     db: Db,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("api").and(
@@ -15,7 +16,8 @@ pub fn budget(
             .or(user_create(db.clone()))
             .or(expense_delete(db.clone()))
             .or(login(db.clone()))
-            .or(test_auth()),
+            .or(test_auth())
+            .recover(error::handle_rejection),
     )
 }
 

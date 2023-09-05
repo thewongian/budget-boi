@@ -1,6 +1,6 @@
 use super::auth::*;
 use super::error::Error::*;
-use super::mongo::{Db, Expense, User, ExpenseRequest};
+use super::mongo::{Db, Expense, ExpenseRequest, User};
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{self, doc, Document};
 use std::convert::Infallible;
@@ -9,8 +9,29 @@ use warp::http::StatusCode;
 use warp::reject::{self, reject, Rejection};
 use warp::reply::{self, Reply};
 
+use tokio_stream::StreamExt;
+
 pub async fn list_expenses(user_id: String, db: Db) -> Result<impl warp::Reply, Infallible> {
-    Ok(StatusCode::OK)
+    let expenses = db
+        .client
+        .unwrap()
+        .database("budget_boi")
+        .collection::<Document>("expenses");
+    let mut cursor = expenses
+        .find(
+            doc! {
+            "owner": user_id,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut expenses: Vec<ExpenseRequest> = vec![];
+    while let Some(doc) = cursor.next().await {
+        let expense: ExpenseRequest = bson::from_bson(mongodb::bson::Bson::Document(doc.unwrap())).unwrap();
+        expenses.push(expense);
+    }
+    Ok(warp::reply::json(&expenses))
 }
 
 pub async fn add_expense(

@@ -4,7 +4,7 @@ use mongodb::{
     Client,
 };
 use serde::{Deserialize, Serialize};
-use std::{env, error::Error};
+use std::{env, error::Error, fmt};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct User {
@@ -37,6 +37,12 @@ impl ExpenseRequest {
             name: expense.name,
             owner: owner,
         }
+    }
+}
+
+impl std::fmt::Display for ExpenseRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "expense: {} cost=${}, owner={}", self.name, self.cost, self.owner)
     }
 }
 
