@@ -22,29 +22,23 @@ pub struct Expense {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ExpenseRequest {
+pub struct ExpenseList {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
-    pub cost: f64,
-    pub name: String,
+    pub list: Vec<Expense>,
     pub owner: String,
 }
-impl ExpenseRequest {
+impl ExpenseList {
     pub fn new(expense: Expense, owner: String) -> Self {
+        let expenses = vec![expense];
         Self {
             id: None,
-            cost: expense.cost,
-            name: expense.name,
+            list: expenses,
             owner: owner,
         }
     }
 }
 
-impl std::fmt::Display for ExpenseRequest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "expense: {} cost=${}, owner={}", self.name, self.cost, self.owner)
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Db {

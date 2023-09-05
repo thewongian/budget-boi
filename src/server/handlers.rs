@@ -1,6 +1,6 @@
 use super::auth::*;
 use super::error::Error::*;
-use super::mongo::{Db, Expense, ExpenseRequest, User};
+use super::mongo::{Db, Expense, ExpenseList, User};
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{self, doc, Document};
 use std::convert::Infallible;
@@ -26,10 +26,10 @@ pub async fn list_expenses(user_id: String, db: Db) -> Result<impl warp::Reply, 
         )
         .await
         .unwrap();
-    let mut expenses: Vec<ExpenseRequest> = vec![];
+    let mut expenses: Vec<Expense> = vec![];
     while let Some(doc) = cursor.next().await {
-        let expense: ExpenseRequest = bson::from_bson(mongodb::bson::Bson::Document(doc.unwrap())).unwrap();
-        expenses.push(expense);
+        let mut expense: ExpenseList = bson::from_bson(mongodb::bson::Bson::Document(doc.unwrap())).unwrap();
+        expenses.append(&mut expense.list);
     }
     Ok(warp::reply::json(&expenses))
 }
@@ -39,18 +39,51 @@ pub async fn add_expense(
     expense: Expense,
     db: Db,
 ) -> Result<impl warp::Reply, Infallible> {
-    let expense_request = ExpenseRequest::new(expense, user_id);
-    let serialized_expense = bson::to_bson(&expense_request).unwrap();
-    let document = serialized_expense.as_document().unwrap();
+    
     let expenses = db
         .client
         .unwrap()
         .database("budget_boi")
         .collection::<Document>("expenses");
-    let insert_result = expenses.insert_one(document.to_owned(), None).await;
-    if insert_result.is_err() {
-        return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+    let expenses_found = expenses.find_one(
+        doc! {
+            "owner": user_id.to_owned(),
+        },
+        None
+    )
+    .await.unwrap();
+    if expenses_found == None {
+        let mut expense_list = ExpenseList::new(expense, user_id);
+        expense_list.list.push(Expense{
+            name: "lmao".to_string(),
+            cost: 1.0,
+        });
+        let serialized_expense = bson::to_bson(&expense_list).unwrap();
+        let document = serialized_expense.as_document().unwrap();
+        let insert_result = expenses.insert_one(document.to_owned(), None).await;
+        if insert_result.is_err() {
+            return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     }
+    else {
+        let mut expense_list: ExpenseList = bson::from_bson(mongodb::bson::Bson::Document(expenses_found.unwrap())).unwrap();
+        expense_list.list.push(expense);
+        let serialized_expense = bson::to_bson(&expense_list).unwrap();
+        let document = serialized_expense.as_document().unwrap();
+        let replace_result = expenses.replace_one(
+            doc! {
+                "_id": &expense_list.id
+            },
+            document,
+            None,
+        ).await;
+        if replace_result.is_err() {
+            return Ok(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+
+    }
+    
+    
     Ok(StatusCode::CREATED)
 }
 
