@@ -18,7 +18,7 @@ const TOKEN_EXPIRATION: i64 = 60;
 const JWT_SECRET: &[u8] = b"seeeecret";
 #[derive(Debug, Deserialize, Clone)]
 pub struct LoginInfo {
-    pub password_hashed: String,
+    pub password: String,
     pub email: String,
 }
 #[derive(Serialize)]
@@ -53,7 +53,7 @@ pub async fn verify_user(login_info: LoginInfo, db: Db) -> Option<ObjectId> {
     let bson_data = user_found.unwrap();
     let user_from_doc: User = bson::from_bson(mongodb::bson::Bson::Document(bson_data)).unwrap();
     let password_hashed = user_from_doc.password_hashed;
-    if password_hashed == login_info.password_hashed {
+    if password_hashed == login_info.password {
         user_from_doc.id
     }
     else {
@@ -91,14 +91,8 @@ pub async fn authorize(headers: HeaderMap<HeaderValue>) -> Result<String, Reject
 }
 
 fn jwt_from_header(headers: &HeaderMap<HeaderValue>) -> Result<String, Error> {
-    let header = match headers.get(AUTHORIZATION) {
-        Some(v) => v,
-        None => return Err(Error::NoAuthHeaderError),
-    };
-    let auth_header = match std::str::from_utf8(header.as_bytes()) {
-        Ok(v) => v,
-        Err(_) => return Err(Error::NoAuthHeaderError),
-    };
+    let header = headers.get(AUTHORIZATION).ok_or(Error::NoAuthHeaderError)?;
+    let auth_header = std::str::from_utf8(header.as_bytes()).map_err(|_| Error::NoAuthHeaderError)?;
     if !auth_header.starts_with(BEARER) {
         return Err(Error::InvalidAuthHeaderError);
     }
