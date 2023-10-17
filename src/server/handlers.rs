@@ -96,28 +96,74 @@ pub async fn add_income(
     Ok(StatusCode::CREATED)
 }
 
-pub async fn add_user(user: User, db: Db) -> Result<impl warp::Reply, Infallible> {
-    log::debug!("add_user: {:?}", user);
-    let serialized_user = bson::to_bson(&user).unwrap();
-    let document = serialized_user.as_document().unwrap();
-    let users = db
+pub async fn add_category(
+    user_id: String,
+    mut expense: Expense,
+    db: Db,
+) -> Result<impl warp::Reply, Infallible> {
+    
+    let expenses = db
         .client
         .unwrap()
         .database("budget_boi")
-        .collection::<Document>("users");
-    let user_found = users
-        .find_one(
+        .collection::<Document>("expenses");
+    let expenses_found = expenses.find_one(
+        doc! {
+            "owner": user_id.to_owned(),
+        },
+        None
+    )
+    .await.unwrap();
+    if expenses_found == None {
+        expense.id = 0;
+        let mut expense_list = ExpenseList::new(expense, user_id);
+        expense_list.id_count += 1;
+        let serialized_expense = bson::to_bson(&expense_list).unwrap();
+        let document = serialized_expense.as_document().unwrap();
+        let insert_result = expenses.insert_one(document.to_owned(), None).await;
+        if insert_result.is_err() {
+            return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
+    else {
+        let mut expense_list: ExpenseList = bson::from_bson(mongodb::bson::Bson::Document(expenses_found.unwrap())).unwrap();
+        
+        expense.id = expense_list.id_count;
+        expense_list.id_count += 1;
+        expense_list.list.push(expense);
+        let serialized_expense = bson::to_bson(&expense_list).unwrap();
+        let document = serialized_expense.as_document().unwrap();
+        let replace_result = expenses.replace_one(
             doc! {
-                "email": user.email,
+                "_id": &expense_list.id
             },
+            document,
             None,
-        )
-        .await
-        .unwrap();
+        ).await;
+        if replace_result.is_err() {
+            return Ok(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+
+    }
+    
+    
+    Ok(StatusCode::CREATED)
+}
+
+pub async fn add_user(user: User, db: &mut Db) -> Result<impl warp::Reply, Infallible> {
+    log::debug!("add_user: {:?}", user);
+    let serialized_user = bson::to_bson(&user).unwrap();
+    let document = serialized_user.as_document().unwrap();
+    let filter = doc! {
+        "email": user.email,
+    };
+    let database = "budget_boi";
+    let collection = "users";
+    let user_found = db.find_one(database, collection, filter).await;
     if user_found != None {
         return Ok(StatusCode::BAD_REQUEST);
     }
-    let insert_result = users.insert_one(document.to_owned(), None).await;
+    let insert_result = db.insert_one(database, collection, document).await;
     if insert_result.is_err() {
         return Ok(StatusCode::INTERNAL_SERVER_ERROR);
     }

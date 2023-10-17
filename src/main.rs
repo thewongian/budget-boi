@@ -14,7 +14,7 @@ async fn main() {
     }
     pretty_env_logger::init();
     let mut db = mongo::Db::new();
-    let err = db.init().await.expect("Database could not be initialized");
+    db.init().await.expect("Database could not be initialized");
     let api = filters::budget_api(db);
     
     let routes = api.with(warp::log("budget"));

@@ -1,7 +1,7 @@
 use mongodb::{
-    bson::oid::ObjectId,
+    bson::{oid::ObjectId, Document},
     options::{ClientOptions, ResolverConfig},
-    Client,
+    Client, results::InsertOneResult,
 };
 use serde::{Deserialize, Serialize};
 use std::{env, error::Error, fmt};
@@ -11,7 +11,7 @@ pub struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub password_hashed: String,
-    pub salt: String,
+    // pub salt: String,      
     pub email: String,
     pub name: String,
 }
@@ -22,7 +22,7 @@ pub struct Expense {
     pub name: String,
     pub id: usize,
     pub deleted: bool,
-}
+} 
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExpenseList {
@@ -43,6 +43,18 @@ impl ExpenseList {
         }
     }
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Category {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub expense_list: Vec<Expense>,
+    pub owner: String,
+    pub max_value: f64,
+    pub curr_value: f64,
+    pub name: String,
+}
+
 
 
 #[derive(Debug, Clone)]
@@ -73,5 +85,23 @@ impl Db {
         }
 
         Ok(())
+    }
+    pub async fn find_one(&mut self, database: &str, collection: &str, filter: Document) -> Option<Document> {
+        let users = self
+            .client
+            .as_ref()
+            .unwrap()
+            .database(database)
+            .collection::<Document>(collection);
+        users.find_one(filter, None,).await.unwrap()
+    }
+    pub async fn insert_one(&mut self, database: &str, collection: &str, document: &Document) -> mongodb::error::Result<InsertOneResult> {
+        let users = self
+            .client
+            .as_ref()
+            .unwrap()
+            .database(database)
+            .collection::<Document>(collection);
+        users.insert_one(document.to_owned(), None).await
     }
 }
